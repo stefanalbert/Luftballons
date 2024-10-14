@@ -32,9 +32,22 @@
 					height:height
 				};
 
+				canvas.addEventListener("touchstart", on_touch);
+
 				start_timer();
 
 			};
+
+			function on_touch(event){
+				event.preventDefault();
+				const touches = event.changedTouches;
+				for( let i = 0; i<touches.length; i++) {
+					balloons.forEach( (cur_balloon) =>{
+						cur_balloon.hit(touches[i].pageX, touches[i].pageY);
+					});
+				};
+			};
+
 
 			function start_timer() {
 				setTimeout(update_drawing_area, 30 ); 
@@ -56,7 +69,14 @@
 				result = {
 					image:balloon,
 					pos_x:random_x_pos(),
-					pos_y:drawing_area.height - BALLOON_HEIGHT
+					pos_y:drawing_area.height - BALLOON_HEIGHT,
+					hit: function(x,y) {
+						this.remove = (x>=this.pos_x) &&
+							      (x<=this.pos_x + BALLOON_WIDTH) &&
+							      (y>=this.pos_y) &&
+							      (y<=this.pos_y + BALLOON_HEIGHT);	
+					},
+					remove:false
 				};
 
 				return result;
@@ -74,7 +94,7 @@
 
 				balloons.forEach( (cur_balloon) => {
 					cur_balloon.pos_y = cur_balloon.pos_y - 2;
-					if( cur_balloon.pos_y > 0 ){
+					if( (cur_balloon.pos_y > 0) && (!cur_balloon.remove) ){
 						tmp.push(cur_balloon);
 					};
 				});
