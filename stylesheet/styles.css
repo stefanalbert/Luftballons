@@ -1,0 +1,24 @@
+body{
+	height: 100%;
+}
+
+
+.mainscreen{
+	display:grid;
+	grid-template-columns: 3fr  1fr;
+	gap:10px;
+	height: 95%;
+}
+
+.playground{
+	grid-column: 1;
+	grid-row: 1;
+	background-color: green;
+}
+
+.test{
+	grid-column: 2;
+	grid-row: 1;
+	background-color: brown;
+}
+

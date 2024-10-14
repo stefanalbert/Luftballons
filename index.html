@@ -1,0 +1,105 @@
+<html>
+	<head>
+		<title>Luftballons</title>
+		<link href="stylesheet/styles.css" rel="stylesheet"/>
+	</head>
+	<body>
+		<div class="mainscreen">
+			<div id="playground" class="playground">
+			</div>
+			<div class="test">
+			</div>
+		</div>
+		<script>
+			const BALLOON_WIDTH = 80;
+			const BALLOON_HEIGHT = 100;
+			const MAX_BALLOONS = 5;
+			let  drawing_area;
+			let  balloons=[];
+			let ticks = 0;
+
+			function init_balloons() {
+				const playground = document.getElementById("playground");
+				const canvas = document.createElement("canvas");
+				const width = playground.offsetWidth - 10;
+				const height = playground.offsetHeight - 10;
+				canvas.width = width;
+				canvas.height = height;
+				playground.appendChild(canvas);
+				drawing_area = {
+					canvas:canvas,
+					width:width,
+					height:height
+				};
+
+				start_timer();
+
+			};
+
+			function start_timer() {
+				setTimeout(update_drawing_area, 30 ); 
+			}
+
+			function randomInt(max) {
+				return Math.floor(Math.random() * max );
+
+			};
+
+			function random_x_pos(){
+				return randomInt(drawing_area.width - BALLOON_WIDTH);
+			}
+
+			function create_balloon(){
+				const balloon = new Image();
+				balloon.src = "images/redballoon.svg";
+	
+				result = {
+					image:balloon,
+					pos_x:random_x_pos(),
+					pos_y:drawing_area.height - BALLOON_HEIGHT
+				};
+
+				return result;
+			};
+
+			function update_drawing_area() {
+				if((balloons.length<5) && (ticks % 50 == 0  ) ){
+					balloons.push(create_balloon());
+					ticks = 0;
+				};
+
+				ticks = ticks + 1;
+
+				const tmp = [];
+
+				balloons.forEach( (cur_balloon) => {
+					cur_balloon.pos_y = cur_balloon.pos_y - 2;
+					if( cur_balloon.pos_y > 0 ){
+						tmp.push(cur_balloon);
+					};
+				});
+
+				balloons = tmp;
+
+				start_timer();
+				requestAnimationFrame(draw);
+
+			};
+			
+
+			function draw() {
+				const canvas = drawing_area.canvas;
+				if( canvas.getContext ){
+					const ctx = canvas.getContext("2d");
+					ctx.clearRect(0,0,drawing_area.width, drawing_area.height);
+				
+					balloons.forEach((cur_balloon) => {
+						ctx.drawImage(cur_balloon.image, cur_balloon.pos_x, cur_balloon.pos_y, BALLOON_WIDTH, BALLOON_HEIGHT); 
+					});
+				}
+
+			};
+			window.addEventListener("load",init_balloons);
+		</script>
+	</body>
+</html>
