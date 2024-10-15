@@ -14,6 +14,8 @@
 			const BALLOON_WIDTH = 80;
 			const BALLOON_HEIGHT = 100;
 			const MAX_BALLOONS = 5;
+			const chars = ['A','B','C','D'];
+			const char_areas = [];
 			let  drawing_area;
 			let  balloons=[];
 			let ticks = 0;
@@ -31,6 +33,10 @@
 					width:width,
 					height:height
 				};
+			
+				chars.forEach( (cur_char) => {
+					char_areas.push( create_char_area(cur_char, canvas));
+				});
 
 				canvas.addEventListener("touchstart", on_touch);
 
@@ -60,14 +66,33 @@
 
 			function random_x_pos(){
 				return randomInt(drawing_area.width - BALLOON_WIDTH);
-			}
+			};
+
+			function create_char_area( text, canvas) {
+				return {
+					text:text,
+					pos_x:0,
+					pos_y:0,
+					init: function(canvas){
+						const context = canvas.getContext("2d");
+						context.font = "48px serif";
+						const area = context.measureText(this.text);
+						this.pos_x = Math.floor((BALLOON_WIDTH - Math.floor(area.width))/2);
+						const height = area.emHeightDescent; //area.emHeightAscent + area.emHeightDescent;
+						this.pos_y = Math.floor((BALLOON_HEIGHT - Math.floor(height))/2) + 20;
+						return this;
+					}
+				}.init(canvas);
+			};
 
 			function create_balloon(){
 				const balloon = new Image();
 				balloon.src = "images/redballoon.svg";
-	
+				const index = randomInt(char_areas.length - 1 );
+
 				result = {
 					image:balloon,
+					text:char_areas[index],	
 					pos_x:random_x_pos(),
 					pos_y:drawing_area.height - BALLOON_HEIGHT,
 					hit: function(x,y) {
@@ -115,6 +140,11 @@
 				
 					balloons.forEach((cur_balloon) => {
 						ctx.drawImage(cur_balloon.image, cur_balloon.pos_x, cur_balloon.pos_y, BALLOON_WIDTH, BALLOON_HEIGHT); 
+						const txt = cur_balloon.text;
+						ctx.fillStyle="white";
+						ctx.font = "48px serif";
+
+						ctx.fillText(txt.text, cur_balloon.pos_x+txt.pos_x, cur_balloon.pos_y +txt.pos_y);
 					});
 				}
 
