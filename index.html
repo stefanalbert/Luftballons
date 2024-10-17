@@ -15,140 +15,153 @@
 			const BALLOON_HEIGHT = 100;
 			const MAX_BALLOONS = 5;
 			const chars = ['A','B','C','D'];
-			const char_areas = [];
-			let  drawing_area;
-			let  balloons=[];
-			let ticks = 0;
+
+			const balloons_model = {
+				balloons:[], 
+				char_areas:[],
+				ticks:0,
+				balloons_view:{
+					canvas:0,
+					width:0,
+					height: 0,
+					self:this,
+					init: function(self,canvas) {
+						this.canvas = canvas;
+						this.width = canvas.width;
+						this.height = canvas.height;
+						this.self = self;
+
+					},
+					draw: function() {
+						if( this.canvas.getContext ){
+							const ctx = this.canvas.getContext("2d");
+							ctx.clearRect(0,0,this.width, this.height);
+
+							this.self.balloons.forEach((cur_balloon) => {
+								ctx.drawImage(cur_balloon.image, cur_balloon.pos_x, cur_balloon.pos_y, BALLOON_WIDTH, BALLOON_HEIGHT); 
+								const txt = cur_balloon.text;
+								ctx.fillStyle="white";
+								ctx.font = "48px serif";
+
+								ctx.fillText(txt.text, cur_balloon.pos_x+txt.pos_x, cur_balloon.pos_y +txt.pos_y);
+							});
+						};
+					}
+				},
+				init: function(canvas, chars) {
+						function create_char_area( text, canvas) {
+							return {
+								text:text,
+								pos_x:0,
+								pos_y:0,
+								init: function(canvas){
+									const context = canvas.getContext("2d");
+									context.font = "48px serif";
+									const area = context.measureText(this.text);
+									this.pos_x = Math.floor((BALLOON_WIDTH - Math.floor(area.width))/2);
+									const height = area.emHeightDescent; 
+									this.pos_y = Math.floor((BALLOON_HEIGHT - Math.floor(height))/2) + 20;
+									return this;
+									}
+								}.init(canvas);
+						};
+
+					this.balloons_view.init(this,canvas);
+					chars.forEach( (cur_char) => {
+						this.char_areas.push( create_char_area(cur_char, canvas));
+					});
+
+					canvas.addEventListener("touchstart", ((event)=>{this.on_touch(event)}));
+					this.start_timer();
+				}, 
+				on_touch: function(event){
+					event.preventDefault();
+					const touches = event.changedTouches;
+					for( let i = 0; i<touches.length; i++) {
+						this.balloons.forEach( (cur_balloon) =>{
+							cur_balloon.hit(touches[i].pageX, touches[i].pageY);
+						});
+					};
+				},
+				update: function() {
+					function create_balloon(self){
+						function random_x_pos(self){
+							return randomInt(self.balloons_view.width - BALLOON_WIDTH);
+						};
+
+						const balloon = new Image();
+						balloon.src = "images/redballoon.svg";
+						const index = randomInt(self.char_areas.length - 1 );
+
+						result = {
+							image:balloon,
+							text:self.char_areas[index],	
+							pos_x:random_x_pos(self),
+							pos_y:self.balloons_view.height - BALLOON_HEIGHT,
+							hit: function(x,y) {
+								this.remove = (x>=this.pos_x) &&
+							      		      (x<=this.pos_x + BALLOON_WIDTH) &&
+							     		      (y>=this.pos_y) &&
+							      		      (y<=this.pos_y + BALLOON_HEIGHT);	
+							},
+							remove:false
+						};
+
+						return result;
+					};
+
+					if((this.balloons.length<5) && (this.ticks % 50 == 0  ) ){
+						this.balloons.push(create_balloon(this));
+						this.ticks = 0;
+					};
+
+					this.ticks = this.ticks + 1;
+
+					const tmp = [];
+
+					this.balloons.forEach( (cur_balloon) => {
+						cur_balloon.pos_y = cur_balloon.pos_y - 2;
+						if( (cur_balloon.pos_y > 0) && (!cur_balloon.remove) ){
+							tmp.push(cur_balloon);
+						};
+					});
+
+					this.balloons = tmp;
+
+					this.start_timer();
+					requestAnimationFrame((()=>{this.balloons_view.draw()}));
+
+				},
+				start_timer:function() {
+					setTimeout(()=>{this.update()}, 30 ); 
+				}
+			};
 
 			function init_balloons() {
-				const playground = document.getElementById("playground");
-				const canvas = document.createElement("canvas");
-				const width = playground.offsetWidth - 10;
-				const height = playground.offsetHeight - 10;
-				canvas.width = width;
-				canvas.height = height;
-				playground.appendChild(canvas);
-				drawing_area = {
-					canvas:canvas,
-					width:width,
-					height:height
+				function create_canvas() {
+					const playground = document.getElementById("playground");
+					const canvas = document.createElement("canvas");
+					const width = playground.offsetWidth - 10;
+					const height = playground.offsetHeight - 10;
+					canvas.width = width;
+					canvas.height = height;
+					playground.appendChild(canvas);
+
+					return canvas;
+
 				};
+
+				canvas = create_canvas();
+				balloons_model.init(canvas, chars );
 			
-				chars.forEach( (cur_char) => {
-					char_areas.push( create_char_area(cur_char, canvas));
-				});
-
-				canvas.addEventListener("touchstart", on_touch);
-
-				start_timer();
-
 			};
 
-			function on_touch(event){
-				event.preventDefault();
-				const touches = event.changedTouches;
-				for( let i = 0; i<touches.length; i++) {
-					balloons.forEach( (cur_balloon) =>{
-						cur_balloon.hit(touches[i].pageX, touches[i].pageY);
-					});
-				};
-			};
-
-
-			function start_timer() {
-				setTimeout(update_drawing_area, 30 ); 
-			}
 
 			function randomInt(max) {
 				return Math.floor(Math.random() * max );
 
 			};
 
-			function random_x_pos(){
-				return randomInt(drawing_area.width - BALLOON_WIDTH);
-			};
-
-			function create_char_area( text, canvas) {
-				return {
-					text:text,
-					pos_x:0,
-					pos_y:0,
-					init: function(canvas){
-						const context = canvas.getContext("2d");
-						context.font = "48px serif";
-						const area = context.measureText(this.text);
-						this.pos_x = Math.floor((BALLOON_WIDTH - Math.floor(area.width))/2);
-						const height = area.emHeightDescent; //area.emHeightAscent + area.emHeightDescent;
-						this.pos_y = Math.floor((BALLOON_HEIGHT - Math.floor(height))/2) + 20;
-						return this;
-					}
-				}.init(canvas);
-			};
-
-			function create_balloon(){
-				const balloon = new Image();
-				balloon.src = "images/redballoon.svg";
-				const index = randomInt(char_areas.length - 1 );
-
-				result = {
-					image:balloon,
-					text:char_areas[index],	
-					pos_x:random_x_pos(),
-					pos_y:drawing_area.height - BALLOON_HEIGHT,
-					hit: function(x,y) {
-						this.remove = (x>=this.pos_x) &&
-							      (x<=this.pos_x + BALLOON_WIDTH) &&
-							      (y>=this.pos_y) &&
-							      (y<=this.pos_y + BALLOON_HEIGHT);	
-					},
-					remove:false
-				};
-
-				return result;
-			};
-
-			function update_drawing_area() {
-				if((balloons.length<5) && (ticks % 50 == 0  ) ){
-					balloons.push(create_balloon());
-					ticks = 0;
-				};
-
-				ticks = ticks + 1;
-
-				const tmp = [];
-
-				balloons.forEach( (cur_balloon) => {
-					cur_balloon.pos_y = cur_balloon.pos_y - 2;
-					if( (cur_balloon.pos_y > 0) && (!cur_balloon.remove) ){
-						tmp.push(cur_balloon);
-					};
-				});
-
-				balloons = tmp;
-
-				start_timer();
-				requestAnimationFrame(draw);
-
-			};
-			
-
-			function draw() {
-				const canvas = drawing_area.canvas;
-				if( canvas.getContext ){
-					const ctx = canvas.getContext("2d");
-					ctx.clearRect(0,0,drawing_area.width, drawing_area.height);
-				
-					balloons.forEach((cur_balloon) => {
-						ctx.drawImage(cur_balloon.image, cur_balloon.pos_x, cur_balloon.pos_y, BALLOON_WIDTH, BALLOON_HEIGHT); 
-						const txt = cur_balloon.text;
-						ctx.fillStyle="white";
-						ctx.font = "48px serif";
-
-						ctx.fillText(txt.text, cur_balloon.pos_x+txt.pos_x, cur_balloon.pos_y +txt.pos_y);
-					});
-				}
-
-			};
 			window.addEventListener("load",init_balloons);
 		</script>
 	</body>
