@@ -1,5 +1,8 @@
 
 
+
+const EVT_BALLOON_TOUCHED = "event_balloon_touched";
+const EVT_BALLOON_EXPIRED = "event_balloon_expired";
 const BALLOON_WIDTH = 80;
 const BALLOON_HEIGHT = 100;
 const MAX_BALLOONS = 5;
@@ -170,6 +173,17 @@ const balloons_model = {
 			return result;
 		};
 
+		// Triggern an event.
+		//
+		// @param self: A reference to the object.
+		// @param event_type: The event type.
+		// @param data: The text that is contained in the balloon that triggered the event.
+		//
+		function trigger_event(self, event_type, data ){
+			const evt = new CustomEvent( event_type,{detail:data});
+			self.balloons_view.canvas.dispatchEvent( evt );
+		};
+
 		if((this.balloons.length<5) && (this.ticks % 50 == 0  ) ){
 			this.balloons.push(create_balloon(this));
 			this.ticks = 0;
@@ -181,9 +195,15 @@ const balloons_model = {
 
 		this.balloons.forEach( (cur_balloon) => {
 			cur_balloon.pos_y = cur_balloon.pos_y - 2;
-			if( (cur_balloon.pos_y > 0) && (!cur_balloon.remove) ){
-				tmp.push(cur_balloon);
-			};
+			if( cur_balloon.remove ){
+				trigger_event(this, EVT_BALLOON_TOUCHED, cur_balloon.text.text);
+			} else {
+				if( cur_balloon.pos_y >=0 ) {
+					tmp.push(cur_balloon);
+				}else{
+					trigger_event(this, EVT_BALLOON_EXPIRED, cur_balloon.text.text);
+				}
+			}
 		});
 
 		this.balloons = tmp;
@@ -196,6 +216,16 @@ const balloons_model = {
 	//
 	start_timer:function() {
 		setTimeout(()=>{this.update()}, 30 ); 
+	},
+	// Add an event listener to the model.
+	//
+	// @param event_type	The event type for which a listener should
+	//                      be added. Supported event types are one
+	//                      of the "EVT_XX constants defined above.
+	// @oaram handler	The handler that should be registered.
+	//
+	add_event_handler: function(event_type, handler ) {
+		this.balloons_view.canvas.addEventListener(event_type, handler);
 	}
 };
 
