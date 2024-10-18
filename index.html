@@ -15,6 +15,7 @@
 			//import {balloons_model} from 'scripts/balloons_1.js';
 			const chars = ['A','B','C','D'];
 
+
 			function init_balloons() {
 				function create_canvas() {
 					const playground = document.getElementById("playground");
@@ -31,6 +32,8 @@
 
 				canvas = create_canvas();
 				balloons_model.init(canvas, chars );
+				balloons_model.add_event_handler( EVT_BALLOON_TOUCHED, (evt)=>{alert(evt.detail)});
+				balloons_model.add_event_handler( EVT_BALLOON_EXPIRED, (evt)=>{alert(evt.detail)});
 			
 			};
 
