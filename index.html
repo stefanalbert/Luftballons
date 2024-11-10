@@ -71,8 +71,10 @@
 								// @param context	The context to draw the display in.
 								//
 								draw: function(context) {
-									context.fillStyle="yellow";
+									context.fillStyle="#C1FF33";
 									context.fillRect(this.x_pos, this.y_pos, this.width, this.width);
+									context.rect(this.x_pos, this.y_pos, this.width, this.width);
+									context.stroke();
 									context.fillStyle="black";
 									context.font="36px serif";
 									context.fillText(this.char_model.get_char(), this.x_pos+this.text_start, this.y_pos + this.width - GAP);
