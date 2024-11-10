@@ -145,7 +145,7 @@ const balloons_model = {
 
 			const balloon = new Image();
 			balloon.src = "images/redballoon.svg";
-			const index = randomInt(self.char_areas.length - 1 );
+			const index = randomInt(self.char_areas.length );
 
 			// The balloon object.
 			result = {
