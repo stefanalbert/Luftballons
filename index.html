@@ -8,36 +8,185 @@
 		<div class="mainscreen">
 			<div id="playground" class="playground">
 			</div>
-			<div class="test">
+			<div id="control_panel" class="control_panel">
 			</div>
 		</div>
 		<script>
 			//import {balloons_model} from 'scripts/balloons_1.js';
 			const chars = ['A','B','C','D'];
+			const GAP = 5;
+			const START_Y = 100;
 
+			// Represents the area where the word is disolayed that needs to be written by
+			// touching the balloons.
+			//
+			const word_panel = {
+				char_model:[],
+				view: {
+					canvas:0,
+					char_panel:[],
+					init: function( canvas, char_model ){
+
+						// Compute the size of a char display. The size is computed using the overall
+						// width of the canvas and dividing it by the number of characters in the
+						// word that should be shown. Add some gap to separate the displays.
+						//
+						// @param canvas: The canvas the characters are drawn on.
+						// @param  no_of_chars: The number of characters to draw.
+						//
+						// @return: The size of a char display in pixel.
+						//
+						function compute_char_display(canvas, no_of_chars) {
+							const width = canvas.width;
+							return Math.floor((width-GAP)/no_of_chars)-GAP; 
+						};
+
+						// Create a new character display object that starts at the supplied
+						// x position and is 'width' pixel wide. 
+						//
+						// @param char_model The model that provides the display's data.
+						// @param x_pos	The display's x-position.
+						// @oaram width	The display's width.
+						// @oaram text_start	The x start position of the text in the display.
+						//
+						function create_display( char_model, x_pos, width, text_start ){
+							return {
+								char_model:'',
+								x_pos: 0,
+								y_pos: 0,
+								width: 0,
+								text_start:0,
+								init: function(char_model, x_pos, width,text_start) {
+									this.char_model = char_model;
+									this.x_pos = x_pos;
+									this.y_pos = START_Y;
+									this.width = width;
+									this.text_start = text_start;
+
+									return this;
+
+								},
+								// Draw the display on the canvas.
+								//
+								// @param context	The context to draw the display in.
+								//
+								draw: function(context) {
+									context.fillStyle="yellow";
+									context.fillRect(this.x_pos, this.y_pos, this.width, this.width);
+									context.fillStyle="black";
+									context.font="36px serif";
+									context.fillText(this.char_model.get_char(), this.x_pos+this.text_start, this.y_pos + this.width - GAP);
+								}
+							}.init(char_model, x_pos, width, text_start );
+						};
+
+						// Calculate the x start position of the supplied character in the display.
+						// The start position is relative to the display, the text should also be
+						// centered in the display.
+						//
+						// @param context	The display's rendering context.
+						// @param char		The character to render.
+						// @oaran width		The width of the display.
+						//
+						// @return The text's start x position in the display.
+						//
+						function compute_text_start( context, char, width ) {
+							context.font = "36px serif";
+							const text_width = context.measureText(char).width;
+							return Math.floor(( width-text_width)/2 );
+						};
+
+
+						const display_width = compute_char_display(canvas,char_model.length);
+					
+						let start_x = GAP;
+						let context = canvas.getContext("2d");
+						char_model.forEach((cur_model) => {
+							const start_text = compute_text_start(context, cur_model.get_char(), display_width );
+							this.char_panel.push(create_display(cur_model, start_x, display_width, start_text) );
+							start_x = start_x + GAP + display_width;
+						});
+
+						this.canvas = canvas;
+					},
+					// Draw the view.
+					//
+					draw: function() {
+						const context = this.canvas.getContext("2d");
+						this.char_panel.forEach((cur_panel) => {
+							cur_panel.draw(context);
+						});
+					}
+				},
+				init: function(canvas, word ){
+
+					// Create a new model object for a character. It contains the 
+					// character itself and information if it had already been
+					// written or not.
+					function create_model(char) {
+						return {
+							char:'',
+							written: false,
+							init: function(char) {
+								this.char = char;
+								return this;
+							},
+							get_char: function() {
+								return this.char;
+							}
+						}.init(char);
+
+					};
+					const chars = word.split('');
+					chars.forEach( (cur_char) => {
+						this.char_model.push(create_model(cur_char));
+					});
+
+					this.view.init(canvas, this.char_model);
+					this.view.draw();
+				}
+			};
+	
+			// Add a new HTML canvas element as a child of the supplied HTML element.
+			// 
+			// @param htmlElement	The id of the HTML element where the newly created
+			//                      canvas should be added.
+			//
+			// @return The newly created canvas element.
+			//
+			function create_canvas(html_element) {
+				const elt = document.getElementById(html_element);
+				const result = document.createElement("canvas");
+				const width = elt.offsetWidth - 10;
+				const height = elt.offsetHeight - 10;
+				result.width = width;
+				result.height = height;
+				elt.appendChild(result);
+
+				return result;
+
+			};
+
+
+			function start_game() {
+				init_balloons();
+				init_control_panel();
+			};
 
 			function init_balloons() {
-				function create_canvas() {
-					const playground = document.getElementById("playground");
-					const canvas = document.createElement("canvas");
-					const width = playground.offsetWidth - 10;
-					const height = playground.offsetHeight - 10;
-					canvas.width = width;
-					canvas.height = height;
-					playground.appendChild(canvas);
-
-					return canvas;
-
-				};
-
-				canvas = create_canvas();
+				const canvas = create_canvas("playground");
 				balloons_model.init(canvas, chars );
 				balloons_model.add_event_handler( EVT_BALLOON_TOUCHED, (evt)=>{alert(evt.detail)});
 				balloons_model.add_event_handler( EVT_BALLOON_EXPIRED, (evt)=>{alert(evt.detail)});
 			
 			};
 
-			window.addEventListener("load",init_balloons);
+			function init_control_panel() {
+				const canvas = create_canvas("control_panel");
+				word_panel.init(canvas, "AUTO" );
+			};
+
+			window.addEventListener("load",start_game);
 		</script>
 	</body>
 </html>
