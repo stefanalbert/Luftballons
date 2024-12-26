@@ -13,7 +13,6 @@
 		</div>
 		<script>
 			//import {balloons_model} from 'scripts/balloons_1.js';
-			const chars = ['A','B','C','D','U','T','O'];
 			const GAP = 5;
 			const START_Y = 100;
 
@@ -197,28 +196,93 @@
 					return result;
 
 				},
+				word_factory: {
+					cur_index:0,
+					words:[],
+					init:function() {
+						// Create a new word object.
+						//
+						// @param word	The word.
+						// @param filler A string contaning the characters that should
+						//               be displayed on balloons in addtion to the 
+						//               characters in the word.
+						//
+						// @return A newly created word object, that represents the input 
+						//         values.
+						//
+						function create_word(word, filler) {
+							alert("1");
+							const upper_case_word = word.toUpperCase();
+							const upper_case_filler = filler.toUpperCase().split('');
+
+							return{
+								word: 0,
+								chars:0, 
+								init:function(){
+									this.word = upper_case_word;
+									this.chars = upper_case_word.split('').concat(upper_case_filler);
+									return this;
+								}
+							}.init();
+
+						};
+						alert("2");
+						
+						this.words.push(create_word("auto", "dci" ) );
+						this.words.push(create_word("hund", "ikl" ) );
+						this.words.push(create_word("haus", "ekm" ) );
+						this.words.push(create_word("kind", "awo" ) );
+						this.words.push(create_word("buch", "eit" ) );
+						this.words.push(create_word("wolke", "aub") );
+						this.words.push(create_word("katze", "iqd") );
+						this.words.push(create_word("maus", "rwd") );
+						this.words.push(create_word("bild", "apw") );
+						
+
+					},
+					new_word: function(){
+						return this.words.at(this.cur_index);
+					}
+				
+				},
+				// Create a new word for the next round of the game.
+				//
+				// @return The word for the game's next round.
+				//
+				new_word:function() {
+					alert("Hallo");
+					return this.word_factory.new_word(); 
+				},
+
 				// Initialize and start the game.
 				//
 				init:function(){
+					alert("4");
 					this.balloons_canvas = this.create_canvas("playground");
+					alert("5");
 					this.word_panel_canvas = this.create_canvas("control_panel");
 
+					alert("3");
+
+					this.word_factory.init();
 					this.start_game();
 
 				},
 				// Start the game with a new word.
 				//
 				start_game:function(){
-					balloons_model.init(this.balloons_canvas, chars );
+					const word = this.new_word();
+					balloons_model.init(this.balloons_canvas, word.chars );
 					balloons_model.add_event_handler( EVT_BALLOON_TOUCHED, (evt)=>{word_panel.update(evt)});
 					balloons_model.add_event_handler( EVT_BALLOON_EXPIRED, (evt)=>{word_panel.expired(evt)});
 
-					word_panel.init(this.word_panel_canvas, "AUTO" );
+					word_panel.init(this.word_panel_canvas, word.word );
 
 				}
 			};
 	
 			function start_game() {
+				alert("0");
 				game_controller.init();
 			};
 
