@@ -29,6 +29,9 @@ const balloons_model = {
 	char_areas:[],
 	// Variable that can be used to control the speed of the animation.
 	ticks:0,
+	// Flag that indicates if a game is active or not. This flag is controlled
+	// by the start_timer and stop_timer functions.
+	active:[],
 	// The balloon view. This object is responsible for rendering the balloons on 
 	// a canvas.
 	balloons_view:{
@@ -67,14 +70,25 @@ const balloons_model = {
 			};
 		}
 	},
+	// Create the model. A model object needs to be created once, to associate it with the
+	// HTML canvas object and can the initialized multiple times. Each initialization of 
+	// the model creates new set of balloon objects.
+	//
+	// @oaram canvas:  The reference to the HTML canvas element where the balloons should be drawn.
+	//
+	create: function(canvas){
+		this.balloons_view.init(this,canvas);
+		canvas.addEventListener("touchstart", ((event)=>{this.on_touch(event)}));
+		this.start_timer();
+
+	},
 	// Initialize the model. 
 	// Among other things this methods starts a timer that calls the update function in regular 
 	// intervals.
 	//
-	// @param canvas: The reference to the HTML canvas element where the balloons should be drawn.
 	// @param chars: An array of possible texts that can be drawn on a newly created balloon.
 	//
-	init: function(canvas, chars) {
+	init: function(chars) {
 		// Create a new area that contains a text and the relative position of the text in the balloon.
 		// The text is centered in the balloon, both vertically and horizontally.
 		// 
@@ -100,13 +114,15 @@ const balloons_model = {
 				}.init(canvas);
 		};
 
-		this.balloons_view.init(this,canvas);
+		this.char_areas=[];
+		this.balloons=[];
+		this.ticks=0;
 		chars.forEach( (cur_char) => {
-			this.char_areas.push( create_char_area(cur_char, canvas));
-			});
+			this.char_areas.push( create_char_area(cur_char, this.balloons_view.canvas));
+		});
 
-		canvas.addEventListener("touchstart", ((event)=>{this.on_touch(event)}));
-		this.start_timer();
+		this.active.push(true);
+		//this.start_timer();
 	}, 
 	// Called when a touch event occurs on the canvas. It checks if the event happened inside of a balloon
 	// and if that's the case the balloon is marked for removal on the next call to the update function.
@@ -184,6 +200,10 @@ const balloons_model = {
 			self.balloons_view.canvas.dispatchEvent( evt );
 		};
 
+		if( this.active.shift()==false) {
+			this.balloons=[];
+		};
+
 		if((this.balloons.length<5) && (this.ticks % 50 == 0  ) ){
 			this.balloons.push(create_balloon(this));
 			this.ticks = 0;
@@ -216,6 +236,11 @@ const balloons_model = {
 	//
 	start_timer:function() {
 		setTimeout(()=>{this.update()}, 30 ); 
+	},
+	// Stop the timer, set the game to inactive.
+	//
+	stop_timer:function() {
+		this.active.push(false);
 	},
 	// Add an event listener to the model.
 	//

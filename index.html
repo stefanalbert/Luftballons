@@ -16,7 +16,7 @@
 			const GAP = 5;
 			const START_Y = 100;
 
-			// Represents the area where the word is disolayed that needs to be written by
+			// Represents the area where the word is displayed that needs to be written by
 			// touching the balloons.
 			//
 			const word_panel = {
@@ -104,6 +104,8 @@
 					
 						let start_x = GAP;
 						let context = canvas.getContext("2d");
+						context.clearRect(0,0,canvas.width, canvas.height);
+						this.char_panel=[];
 						char_model.forEach((cur_model) => {
 							const start_text = compute_text_start(context, cur_model.get_char(), display_width );
 							this.char_panel.push(create_display(cur_model, start_x, display_width, start_text) );
@@ -140,11 +142,13 @@
 						}.init(char);
 
 					};
+
+					this.char_model=[];
 					const chars = word.split('');
 					chars.forEach( (cur_char) => {
 						this.char_model.push(create_model(cur_char));
 					});
-
+					
 					this.view.init(canvas, this.char_model);
 					this.view.draw();
 				},
@@ -153,22 +157,41 @@
 				// the same as the touched bolloons one and has not been touched
 				// yet. If it finds such a character it marks it as written.
 				//
-				// @oaram evt	The event that triggered the function call.
+				// @oaram char	The character shown in the touched balloon.
+				// @return <code>true</code> if a character got updated and
+				//         <code>false</code> if no character got updated
+				//         which means that either the provided character was
+				//         not part of the word, or that the matching characters
+				//         in the model had already marked as being touched 
+				//         before.
 				//
-				update: function(evt) {
+				update: function(char) {
 					const chars = this.char_model.filter((cur_char) => {
-						return (cur_char.get_char() == evt.detail) && (!cur_char.written);
+						return (cur_char.get_char() == char) && (!cur_char.written);
 					} );
-					if( chars.length > 0 )  {
+
+					const updated = (chars.length > 0 );
+
+					if(updated)  {
 						chars[0].written=true;
 					};
-					this.view.draw();
+
+					return updated;
 				},
-				// Called when a balloon reaches the top.
+				// Check if all chaaracters in the model have been touched.
 				//
-				// @param evt	The event that triggered the function call.
+				// @return <code>true</code> if all characters in the model 
+				//         have been marked as touched and <code>false</code>
+				//         if at least one character in the model is still
+				//         untouched.
 				//
-				expired: function(evt) {
+				is_complete:function() {
+					return this.char_model.every((cur_char)=>(cur_char.written));
+				},
+				// Draw the word panel.
+				//
+				draw:function(){
+					this.view.draw();
 				}
 			};
 
@@ -211,7 +234,6 @@
 						//         values.
 						//
 						function create_word(word, filler) {
-							alert("1");
 							const upper_case_word = word.toUpperCase();
 							const upper_case_filler = filler.toUpperCase().split('');
 
@@ -226,7 +248,6 @@
 							}.init();
 
 						};
-						alert("2");
 						
 						this.words.push(create_word("auto", "dci" ) );
 						this.words.push(create_word("hund", "ikl" ) );
@@ -241,7 +262,9 @@
 
 					},
 					new_word: function(){
-						return this.words.at(this.cur_index);
+						this.cur_index = this.cur_index + 1;
+						return this.words.at(this.cur_index-1);
+						
 					}
 				
 				},
@@ -250,31 +273,48 @@
 				// @return The word for the game's next round.
 				//
 				new_word:function() {
-					alert("Hallo");
 					return this.word_factory.new_word(); 
 				},
 
 				// Initialize and start the game.
 				//
 				init:function(){
-					alert("4");
 					this.balloons_canvas = this.create_canvas("playground");
-					alert("5");
 					this.word_panel_canvas = this.create_canvas("control_panel");
 
-					alert("3");
+					balloons_model.create(this.balloons_canvas);
+					balloons_model.add_event_handler( EVT_BALLOON_TOUCHED, (evt)=>{this.balloon_touched(evt)});
+					balloons_model.add_event_handler( EVT_BALLOON_EXPIRED, (evt)=>{this.balloon_expired(evt)});
 
 					this.word_factory.init();
 					this.start_game();
 
 				},
+				// Handler for the "balloon touched" event.
+				//
+				// @param evt	The event that triggered the function call.
+				//
+				balloon_touched:function(evt) {
+					word_panel.update(evt.detail);
+					word_panel.draw();
+					if(word_panel.is_complete() ){
+						balloons_model.stop_timer();
+						//alert("Fertig!");
+						this.start_game();
+					};
+				},
+				// Handler for the "expired" event. This function is called when
+				// a balloon reaches the top of the playground.
+				//
+				// @param evt The event that triggered the function call.
+				//
+				balloon_expired:function(evt){
+				},
 				// Start the game with a new word.
 				//
 				start_game:function(){
 					const word = this.new_word();
-					balloons_model.init(this.balloons_canvas, word.chars );
-					balloons_model.add_event_handler( EVT_BALLOON_TOUCHED, (evt)=>{word_panel.update(evt)});
-					balloons_model.add_event_handler( EVT_BALLOON_EXPIRED, (evt)=>{word_panel.expired(evt)});
+					balloons_model.init(word.chars );
 
 					word_panel.init(this.word_panel_canvas, word.word );
 
@@ -282,7 +322,7 @@
 			};
 	
 			function start_game() {
-				alert("0");
+				alert("Hallo");
 				game_controller.init();
 			};
 
