@@ -13,11 +13,10 @@
 		</div>
 		<script>
 			//import {balloons_model} from 'scripts/balloons_1.js';
-			const chars = ['A','B','C','D','U','T','O'];
 			const GAP = 5;
 			const START_Y = 100;
 
-			// Represents the area where the word is disolayed that needs to be written by
+			// Represents the area where the word is displayed that needs to be written by
 			// touching the balloons.
 			//
 			const word_panel = {
@@ -71,6 +70,7 @@
 								// @param context	The context to draw the display in.
 								//
 								draw: function(context) {
+									context.beginPath();
 									if( this.char_model.written ){
 										context.fillStyle="#C1FF33";
 										context.fillRect(this.x_pos, this.y_pos, this.width, this.width);
@@ -105,6 +105,8 @@
 					
 						let start_x = GAP;
 						let context = canvas.getContext("2d");
+						context.clearRect(0,0,canvas.width,canvas.height);
+						this.char_panel=[];
 						char_model.forEach((cur_model) => {
 							const start_text = compute_text_start(context, cur_model.get_char(), display_width );
 							this.char_panel.push(create_display(cur_model, start_x, display_width, start_text) );
@@ -141,11 +143,13 @@
 						}.init(char);
 
 					};
+
+					this.char_model=[];
 					const chars = word.split('');
 					chars.forEach( (cur_char) => {
 						this.char_model.push(create_model(cur_char));
 					});
-
+					
 					this.view.init(canvas, this.char_model);
 					this.view.draw();
 				},
@@ -154,63 +158,174 @@
 				// the same as the touched bolloons one and has not been touched
 				// yet. If it finds such a character it marks it as written.
 				//
-				// @oaram evt	The event that triggered the function call.
+				// @oaram char	The character shown in the touched balloon.
+				// @return <code>true</code> if a character got updated and
+				//         <code>false</code> if no character got updated
+				//         which means that either the provided character was
+				//         not part of the word, or that the matching characters
+				//         in the model had already marked as being touched 
+				//         before.
 				//
-				update: function(evt) {
+				update: function(char) {
 					const chars = this.char_model.filter((cur_char) => {
-						return (cur_char.get_char() == evt.detail) && (!cur_char.written);
+						return (cur_char.get_char() == char) && (!cur_char.written);
 					} );
-					if( chars.length > 0 )  {
+
+					const updated = (chars.length > 0 );
+
+					if(updated)  {
 						chars[0].written=true;
 					};
-					this.view.draw();
+
+					return updated;
 				},
-				// Called when a balloon reaches the top.
+				// Check if all chaaracters in the model have been touched.
+				//
+				// @return <code>true</code> if all characters in the model 
+				//         have been marked as touched and <code>false</code>
+				//         if at least one character in the model is still
+				//         untouched.
+				//
+				is_complete:function() {
+					return this.char_model.every((cur_char)=>(cur_char.written));
+				},
+				// Draw the word panel.
+				//
+				draw:function(){
+					this.view.draw();
+				}
+			};
+
+			// Represents the game logic. Uses the balloons and the word panel.
+			//
+			const game_controller = {
+				balloons_canvas:0,
+				word_panel_canvas:0,
+				// Add a new HTML canvas element as a child of the supplied HTML element.
+				// 
+				// @param htmlElement	The id of the HTML element where the newly created
+				//                      canvas should be added.
+				//
+				// @return The newly created canvas element.
+				//
+				create_canvas: function(html_element) {
+					const elt = document.getElementById(html_element);
+					const result = document.createElement("canvas");
+					const width = elt.offsetWidth - 10;
+					const height = elt.offsetHeight - 10;
+					result.width = width;
+					result.height = height;
+					elt.appendChild(result);
+
+					return result;
+
+				},
+				word_factory: {
+					cur_index:0,
+					words:[],
+					init:function() {
+						// Create a new word object.
+						//
+						// @param word	The word.
+						// @param filler A string contaning the characters that should
+						//               be displayed on balloons in addtion to the 
+						//               characters in the word.
+						//
+						// @return A newly created word object, that represents the input 
+						//         values.
+						//
+						function create_word(word, filler) {
+							const upper_case_word = word.toUpperCase();
+							const upper_case_filler = filler.toUpperCase().split('');
+
+							return{
+								word: 0,
+								chars:0, 
+								init:function(){
+									this.word = upper_case_word;
+									this.chars = upper_case_word.split('').concat(upper_case_filler);
+									return this;
+								}
+							}.init();
+
+						};
+						
+						this.words.push(create_word("auto", "dci" ) );
+						this.words.push(create_word("wolke", "aub") );
+						this.words.push(create_word("hund", "ikl" ) );
+						this.words.push(create_word("haus", "ekm" ) );
+						this.words.push(create_word("kind", "awo" ) );
+						this.words.push(create_word("buch", "eit" ) );
+						this.words.push(create_word("katze", "iqd") );
+						this.words.push(create_word("maus", "rwd") );
+						this.words.push(create_word("bild", "apw") );
+						
+
+					},
+					new_word: function(){
+						this.cur_index = this.cur_index + 1;
+						return this.words.at(this.cur_index-1);
+						
+					}
+				
+				},
+				// Create a new word for the next round of the game.
+				//
+				// @return The word for the game's next round.
+				//
+				new_word:function() {
+					return this.word_factory.new_word(); 
+				},
+
+				// Initialize and start the game.
+				//
+				init:function(){
+					this.balloons_canvas = this.create_canvas("playground");
+					this.word_panel_canvas = this.create_canvas("control_panel");
+
+					balloons_model.create(this.balloons_canvas);
+					balloons_model.add_event_handler( EVT_BALLOON_TOUCHED, (evt)=>{this.balloon_touched(evt)});
+					balloons_model.add_event_handler( EVT_BALLOON_EXPIRED, (evt)=>{this.balloon_expired(evt)});
+
+					this.word_factory.init();
+					this.start_game();
+
+				},
+				// Handler for the "balloon touched" event.
 				//
 				// @param evt	The event that triggered the function call.
 				//
-				expired: function(evt) {
+				balloon_touched:function(evt) {
+					word_panel.update(evt.detail);
+					word_panel.draw();
+					if(word_panel.is_complete() ){
+						balloons_model.stop_timer();
+						alert("Fertig!");
+						this.start_game();
+					};
+				},
+				// Handler for the "expired" event. This function is called when
+				// a balloon reaches the top of the playground.
+				//
+				// @param evt The event that triggered the function call.
+				//
+				balloon_expired:function(evt){
+				},
+				// Start the game with a new word.
+				//
+				start_game:function(){
+					const word = this.new_word();
+					balloons_model.init(word.chars );
+
+					word_panel.init(this.word_panel_canvas, word.word );
+
 				}
 			};
 	
-			// Add a new HTML canvas element as a child of the supplied HTML element.
-			// 
-			// @param htmlElement	The id of the HTML element where the newly created
-			//                      canvas should be added.
-			//
-			// @return The newly created canvas element.
-			//
-			function create_canvas(html_element) {
-				const elt = document.getElementById(html_element);
-				const result = document.createElement("canvas");
-				const width = elt.offsetWidth - 10;
-				const height = elt.offsetHeight - 10;
-				result.width = width;
-				result.height = height;
-				elt.appendChild(result);
-
-				return result;
-
-			};
-
-
 			function start_game() {
-				init_balloons();
-				init_control_panel();
+				game_controller.init();
 			};
 
-			function init_balloons() {
-				const canvas = create_canvas("playground");
-				balloons_model.init(canvas, chars );
-				balloons_model.add_event_handler( EVT_BALLOON_TOUCHED, (evt)=>{word_panel.update(evt)});
-				balloons_model.add_event_handler( EVT_BALLOON_EXPIRED, (evt)=>{word_panel.expired(evt)});
-			
-			};
-
-			function init_control_panel() {
-				const canvas = create_canvas("control_panel");
-				word_panel.init(canvas, "AUTO" );
-			};
 
 			window.addEventListener("load",start_game);
 		</script>
