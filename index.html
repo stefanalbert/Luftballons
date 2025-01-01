@@ -70,6 +70,7 @@
 								// @param context	The context to draw the display in.
 								//
 								draw: function(context) {
+									context.beginPath();
 									if( this.char_model.written ){
 										context.fillStyle="#C1FF33";
 										context.fillRect(this.x_pos, this.y_pos, this.width, this.width);
@@ -104,7 +105,7 @@
 					
 						let start_x = GAP;
 						let context = canvas.getContext("2d");
-						context.clearRect(0,0,canvas.width, canvas.height);
+						context.clearRect(0,0,canvas.width,canvas.height);
 						this.char_panel=[];
 						char_model.forEach((cur_model) => {
 							const start_text = compute_text_start(context, cur_model.get_char(), display_width );
@@ -250,11 +251,11 @@
 						};
 						
 						this.words.push(create_word("auto", "dci" ) );
+						this.words.push(create_word("wolke", "aub") );
 						this.words.push(create_word("hund", "ikl" ) );
 						this.words.push(create_word("haus", "ekm" ) );
 						this.words.push(create_word("kind", "awo" ) );
 						this.words.push(create_word("buch", "eit" ) );
-						this.words.push(create_word("wolke", "aub") );
 						this.words.push(create_word("katze", "iqd") );
 						this.words.push(create_word("maus", "rwd") );
 						this.words.push(create_word("bild", "apw") );
